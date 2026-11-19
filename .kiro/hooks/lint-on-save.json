@@ -1,0 +1,17 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Lint on save",
+      "description": "Run npm run lint in idea-board/ whenever a .ts or .tsx file is saved.",
+      "trigger": "PostFileSave",
+      "matcher": "\\.(ts|tsx)$",
+      "action": {
+        "type": "command",
+        "command": "cd idea-board && npm run lint"
+      },
+      "timeout": 120,
+      "enabled": true
+    }
+  ]
+}
