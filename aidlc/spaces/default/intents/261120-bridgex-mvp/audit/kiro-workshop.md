@@ -121,3 +121,91 @@ Append-only. One block per event, oldest first, UTC. Entries before 08:20Z were 
 **Agent**: kiro (orchestrator)
 **Details**: Wrote steering `aidlc-workflow.md`, `product.md`, `tech.md`, `structure.md` (always), `security.md` (bridgex TypeScript files) and `integration-mapping.md` (integration documents).
 ---
+
+## Unit Specs Written
+**Timestamp**: 2026-11-20T08:50:00Z
+**Event**: ARTIFACT_CREATED
+**Stage**: functional-design (all units)
+**Agent**: kiro (spec role)
+**Details**: Wrote `.kiro/specs/` for U1 transformation-engine, U2 simulated-systems, U3 gateway, U4 platform-infra, U5 dashboard, U6 ai-mapping-assistant (requirements with EARS criteria, design, tasks traced to requirement IDs). Committed in `551283f` before any application code. Gates approved under delegation.
+---
+
+## U1 Transformation Engine
+**Timestamp**: 2026-11-20T08:52:26Z
+**Event**: TEST_RUN
+**Stage**: code-generation (U1)
+**Agent**: kiro (build role)
+**Details**: 7 test files, 50 tests passed, typecheck clean. Includes the proposal's balance example as an exact-match golden test. Commit `c02cd68`.
+---
+
+## U2 Simulated Systems
+**Timestamp**: 2026-11-20T08:58:00Z
+**Event**: TEST_RUN
+**Stage**: code-generation (U2)
+**Agent**: kiro (build role)
+**Details**: SOAP core banking (3 operations, 5 faults, WS-Security) and REST FinTech with failure injection. 68 tests passed. Commit `f8e200d`.
+---
+
+## U3 Gateway and U6 AI Mapping
+**Timestamp**: 2026-11-20T09:06:30Z
+**Event**: TEST_RUN
+**Stage**: code-generation (U3, U6)
+**Agent**: kiro (build role)
+**Details**: First run had 3 failures: colliding request ids under a stubbed `Math.random`, a test helper that left the query in the path, and a single-element XML list in an AI test sample. Fixed; 104 tests passed. Local server checked over HTTP, including retry recovery. Commits `3c9be1b`, `3bfe311`.
+---
+
+## First Deployment
+**Timestamp**: 2026-11-20T09:13:00Z
+**Event**: DEPLOYMENT
+**Stage**: environment-provisioning, deployment-execution
+**Agent**: kiro (ops role)
+**Details**: `cdk deploy` created BridgeXStack (38 resources) in 385840043208/us-east-1. IAM reviewed in the synthesized template first. `scripts/smoke.sh` passed 11/11 against https://ouvng54n73.execute-api.us-east-1.amazonaws.com. Bedrock suggestion call returned 9 suggestions, all paths verified.
+---
+
+## Dashboard Deployed and Checked
+**Timestamp**: 2026-11-20T09:22:00Z
+**Event**: TEST_RUN
+**Stage**: code-generation (U5), deployment-execution
+**Agent**: kiro (build, ops roles)
+**Details**: Headless Chromium could not start (missing libatk), so the dashboard was driven in jsdom with real fetch: 21/21 checks, no page errors, locally and on https://dx6gjz51ih1ul.cloudfront.net including AI mapping. CORS preflight allows only the CloudFront origin and localhost. Commit `71c99b4`.
+---
+
+## Agents and Hooks
+**Timestamp**: 2026-11-20T09:26:00Z
+**Event**: DECISION_RECORDED
+**Stage**: state-initialization
+**Agent**: kiro (orchestrator)
+**Details**: Repointed `spec`, `build`, `reviewer` from idea-board to BridgeX and mapped them to AI-DLC roles; added `ops` (cannot delete AWS resources) and `aidlc` (orchestrator). Replaced the idea-board lint hook with a BridgeX typecheck hook; added hooks for tests after each spec task, an audit reminder on every prompt, blocking credentials in files (tested: fake key blocked, clean text allowed) and confirming destructive commands (tested: `cdk destroy` asks). Commit `009fdfe`.
+---
+
+## Independent Review
+**Timestamp**: 2026-11-20T09:32:00Z
+**Event**: STAGE_COMPLETED
+**Stage**: build-and-test
+**Agent**: reviewer (quality, devsecops)
+**Details**: 0 Critical, 4 Warnings, 4 Suggestions. W1, W3, W4 fixed (W4: Bedrock IAM narrowed from a region wildcard to the three regions the inference profile routes to); W2 accepted; dispositions in `construction/build-and-test/review-report.md`. 105 tests passed. Commit `6a797d1`.
+---
+
+## Third Deployment
+**Timestamp**: 2026-11-20T09:38:00Z
+**Event**: DEPLOYMENT
+**Stage**: deployment-execution, observability-setup
+**Agent**: kiro (ops role)
+**Details**: Redeployed the review fixes. Smoke 11/11; invalid AI request now 400; AI tab 9/9 verified in the deployed dashboard. CloudWatch dashboard `BridgeX-Operations` present, 20 metric streams in namespace `BridgeX`, failure alarm in state OK.
+---
+
+## Demo Readiness Gate Opened
+**Timestamp**: 2026-11-20T09:45:00Z
+**Event**: GATE_OPENED
+**Stage**: demo-readiness
+**Agent**: kiro (orchestrator)
+**Details**: Wrote `operation/demo-runbook.md`, `bridgex/README.md`, phase checks and `aidlc-state.md`. This gate waits for the person: rehearse the runbook against AWS, then approve or request changes. Kiro does not approve it under delegation.
+---
+
+## Fourth Deployment and Record Correction
+**Timestamp**: 2026-11-20T09:49:34Z
+**Event**: NOTE
+**Stage**: deployment-execution
+**Agent**: kiro (ops role)
+**Details**: Redeployed the dashboard hint for repeating XML lists; smoke 11/11, dashboard DOM run 19/19 (AI tab not rerun). Correction to the 09:22Z entry: the dashboard check has 20 steps with the AI tab and 19 without, not 21. The test report, review report and deployment log now say 20. A repository-wide scan found no AWS credentials or API key in workspace files.
+---
