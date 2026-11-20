@@ -18,8 +18,10 @@ export function createTestSimulators(chaos = new InMemoryChaosStore(), sleep: (m
   });
 }
 
-export function request(method: string, path: string, body = '', headers: Record<string, string> = {}): HttpRequest {
-  return { method, path, headers, query: {}, body };
+/** Builds a request the way the adapters do: the query string is split off the path. */
+export function request(method: string, pathAndQuery: string, body = '', headers: Record<string, string> = {}): HttpRequest {
+  const url = new URL(pathAndQuery, 'http://test.local');
+  return { method, path: url.pathname, headers, query: Object.fromEntries(url.searchParams), body };
 }
 
 export function coreBankingCall(operation: string, body: Record<string, string>, token: UsernameToken | null = CORE_CREDS): HttpRequest {

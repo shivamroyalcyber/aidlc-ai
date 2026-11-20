@@ -14,7 +14,7 @@ function required(name: string): string {
 }
 
 const secrets = new SecretsManagerClient({});
-const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}), { marshallOptions: { removeUndefinedValues: true } });
 const FIVE_MINUTES = 5 * 60 * 1000;
 
 const app = createSimulatorsApp({
