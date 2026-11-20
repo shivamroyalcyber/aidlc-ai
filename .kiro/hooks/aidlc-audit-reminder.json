@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "AI-DLC audit trail reminder",
+      "trigger": "UserPromptSubmit",
+      "description": "Keeps the AI-DLC audit trail and state file current on every human prompt.",
+      "action": {
+        "type": "agent",
+        "prompt": "AI-DLC record keeping: before you finish this turn, append one entry for this human turn to aidlc/spaces/default/intents/261120-bridgex-mvp/audit/kiro-workshop.md (UTC timestamp, event type, stage, the person's words with any key, token or password replaced by [masked], Git Name). If the message approves, rejects or changes a gate, also update the stage checkbox and Current Status in aidlc-state.md. Never edit earlier audit entries."
+      }
+    }
+  ]
+}

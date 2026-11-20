@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Run BridgeX tests after each spec task",
+      "trigger": "PostTaskExec",
+      "description": "AI-DLC Construction gate: after a spec task is marked complete, run the Vitest suite so a task never closes on red tests.",
+      "action": {
+        "type": "command",
+        "command": "cd bridgex && npm test --silent 2>&1 | tail -n 15",
+        "timeout": 300
+      }
+    }
+  ]
+}

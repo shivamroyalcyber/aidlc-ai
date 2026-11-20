@@ -2,16 +2,15 @@
   "version": "v1",
   "hooks": [
     {
-      "name": "Lint on save",
-      "description": "Run npm run lint in idea-board/ whenever a .ts or .tsx file is saved.",
+      "name": "Typecheck BridgeX on save",
       "trigger": "PostFileSave",
-      "matcher": "\\.(ts|tsx)$",
+      "description": "Runs the strict TypeScript check in bridgex/ whenever a BridgeX .ts file is saved (replaces the old idea-board lint hook).",
+      "matcher": "bridgex/.*\\.ts$",
       "action": {
         "type": "command",
-        "command": "cd idea-board && npm run lint"
-      },
-      "timeout": 120,
-      "enabled": true
+        "command": "cd bridgex && npm run --silent typecheck",
+        "timeout": 120
+      }
     }
   ]
 }

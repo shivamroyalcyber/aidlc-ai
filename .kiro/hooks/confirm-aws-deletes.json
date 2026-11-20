@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Confirm destructive AWS commands",
+      "trigger": "PreToolUse",
+      "description": "Asks the person before any command that deletes demo AWS resources, force-resets git or pushes, as the AI-DLC gate rules require.",
+      "matcher": "execute_bash|shell|bash",
+      "action": {
+        "type": "command",
+        "command": "input=$(cat); if printf '%s' \"$input\" | grep -Eq 'cdk destroy|cloudformation delete-stack|dynamodb delete-table|secretsmanager delete-secret|s3 rb |s3 rm |git push|git reset --hard'; then echo '{\"hookSpecificOutput\":{\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"This command deletes AWS resources, rewrites git history or pushes code. Confirm before it runs.\"}}'; fi; exit 0",
+        "timeout": 10
+      }
+    }
+  ]
+}
