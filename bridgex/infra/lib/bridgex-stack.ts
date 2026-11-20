@@ -20,6 +20,7 @@ import { METRICS_NAMESPACE } from '../../src/gateway/metrics';
 const ROOT = join(import.meta.dirname, '..', '..');
 const MODEL_ID = 'us.anthropic.claude-haiku-4-5-20251001-v1:0';
 const FOUNDATION_MODEL = MODEL_ID.replace(/^us\./, '');
+const INFERENCE_PROFILE_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2'];
 const INTEGRATION_IDS = INTEGRATION_DOCUMENTS.map((doc) => (doc as { id: string }).id);
 
 /** Everything BridgeX needs in one stack (U4, ADR-001/005/007/009/010). Demo data only, so everything is removable. */
@@ -111,9 +112,9 @@ export class BridgeXStack extends Stack {
         actions: ['bedrock:InvokeModel'],
         resources: [
           `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/${MODEL_ID}`,
-          // The US cross-region inference profile may route to any US region, so the region is a wildcard.
-          // The resource is still limited to this one foundation model.
-          `arn:aws:bedrock:*::foundation-model/${FOUNDATION_MODEL}`,
+          // The US cross-region inference profile routes to these three regions
+          // (`aws bedrock get-inference-profile`, checked 2026-11-20; review finding W4). No wildcard.
+          ...INFERENCE_PROFILE_REGIONS.map((region) => `arn:aws:bedrock:${region}::foundation-model/${FOUNDATION_MODEL}`),
         ],
       }),
     );

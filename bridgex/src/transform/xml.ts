@@ -4,6 +4,9 @@ import { BridgeError } from './errors';
 export const MAX_PAYLOAD_BYTES = 64 * 1024;
 
 // Element values stay strings; the mapping layer converts types explicitly.
+// SECURITY: `processEntities: true` decodes the five predefined entities (&amp; &lt; ...) so values are readable.
+// It would also expand entities declared in a DOCTYPE, which is why parseXml() rejects <!DOCTYPE and <!ENTITY
+// before parsing. That check is load-bearing: never remove it while this flag is on (review finding W1).
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',

@@ -63,8 +63,17 @@ export async function handleAdmin(deps: GatewayDeps, request: HttpRequest, reque
 
     if (method === 'POST' && path === '/admin/mapping-suggestions') {
       if (!deps.suggestMappings) throw new BridgeError('AI_UNAVAILABLE', 'Mapping suggestions are not configured', 501, [], 'gateway');
-      const body = parseJsonBody(request.body) as unknown as SuggestionRequest;
-      return jsonResponse(200, await deps.suggestMappings(body));
+      const body = parseJsonBody(request.body);
+      const problems = (['source', 'target'] as const).flatMap((side) => {
+        const value = body[side] as { format?: unknown; sample?: unknown } | undefined;
+        if (typeof value !== 'object' || value === null) return [`${side} must be an object`];
+        return [
+          ...(value.format === 'json' || value.format === 'xml' ? [] : [`${side}.format must be json or xml`]),
+          ...(typeof value.sample === 'string' && value.sample.trim() !== '' ? [] : [`${side}.sample must be a non-empty string`]),
+        ];
+      });
+      if (problems.length > 0) throw bad('Invalid mapping suggestion request', problems);
+      return jsonResponse(200, await deps.suggestMappings(body as unknown as SuggestionRequest));
     }
 
     throw new BridgeError('ROUTE_NOT_FOUND', 'Unknown admin route', 404);

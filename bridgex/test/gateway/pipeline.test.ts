@@ -341,4 +341,17 @@ describe('U3 Req 6 – admin API (FR-14 to FR-16)', () => {
     const { app } = setup();
     expect((await app(admin('POST', '/admin/mapping-suggestions', '{}'))).status).toBe(501);
   });
+
+  it('mapping suggestions validate the request shape before calling the model (review W3)', async () => {
+    const { app, deps } = setup();
+    let called = false;
+    deps.suggestMappings = async () => {
+      called = true;
+      return { model: 'm', suggestions: [], draft: [], preview: {}, previewErrors: [], unmappedTargets: [], sourcePaths: [], targetPaths: [] };
+    };
+    const response = await app(admin('POST', '/admin/mapping-suggestions', JSON.stringify({ source: { format: 'csv', sample: 'a,b' } })));
+    expect(response.status).toBe(400);
+    expect(JSON.parse(response.body).error.details).toEqual(['source.format must be json or xml', 'target must be an object']);
+    expect(called).toBe(false);
+  });
 });
