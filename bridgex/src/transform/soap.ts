@@ -122,6 +122,17 @@ function findText(node: unknown, key: string): string | undefined {
   return undefined;
 }
 
+/** Adds a namespace prefix to every element name in a plain object tree (arrays are kept). */
+export function withPrefix(value: unknown, prefix = 'ns:'): unknown {
+  if (Array.isArray(value)) return value.map((item) => withPrefix(item, prefix));
+  if (!isRecord(value)) return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    out[key.startsWith('@_') ? key : `${prefix}${key}`] = withPrefix(child, prefix);
+  }
+  return out;
+}
+
 /** Reads the UsernameToken from a parsed SOAP header, if present. */
 export function readUsernameToken(header: Record<string, unknown>): UsernameToken | undefined {
   const security = header['Security'];
