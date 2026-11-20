@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BridgeX – Legacy Modernization Gateway</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">⇄</span>
+      <div>
+        <h1>BridgeX</h1>
+        <p>Connecting legacy SOAP/XML systems to modern REST/JSON apps</p>
+      </div>
+    </div>
+    <form id="connect-form" class="connect">
+      <label for="api-url">Gateway URL</label>
+      <input id="api-url" type="url" required placeholder="https://…execute-api.us-east-1.amazonaws.com">
+      <label for="api-key">API key</label>
+      <input id="api-key" type="password" autocomplete="off" required placeholder="x-api-key">
+      <button type="submit">Connect</button>
+      <span id="connection-status" class="status" role="status" aria-live="polite"></span>
+    </form>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="BridgeX views">
+    <button role="tab" id="tab-overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
+    <button role="tab" id="tab-playground" aria-controls="panel-playground" aria-selected="false" tabindex="-1">Playground</button>
+    <button role="tab" id="tab-studio" aria-controls="panel-studio" aria-selected="false" tabindex="-1">Transformation Studio</button>
+    <button role="tab" id="tab-ai" aria-controls="panel-ai" aria-selected="false" tabindex="-1">AI Mapping</button>
+    <button role="tab" id="tab-integrations" aria-controls="panel-integrations" aria-selected="false" tabindex="-1">Integrations</button>
+  </nav>
+
+  <main>
+    <!-- Overview -->
+    <section id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
+      <div id="kpis" class="kpis" aria-live="polite"></div>
+      <div class="grid-2">
+        <div class="card">
+          <h2>Traffic, last 30 minutes</h2>
+          <div id="chart" class="chart" role="img" aria-label="Requests per minute, succeeded and failed"></div>
+          <p class="legend"><span class="dot ok"></span> succeeded <span class="dot bad"></span> failed</p>
+        </div>
+        <div class="card">
+          <h2>By integration</h2>
+          <table id="by-integration">
+            <thead><tr><th scope="col">Integration</th><th scope="col">Requests</th><th scope="col">Failed</th><th scope="col">Retried</th><th scope="col">Avg ms</th><th scope="col">p95 ms</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h2>Recent requests</h2>
+          <span class="muted">Refreshes every 5 seconds. Select a row to see each transformation stage.</span>
+        </div>
+        <table id="requests" class="clickable">
+          <thead><tr><th scope="col">Time</th><th scope="col">Integration</th><th scope="col">Direction</th><th scope="col">Status</th><th scope="col">Outcome</th><th scope="col">Attempts</th><th scope="col">Latency</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="detail-card" class="card" hidden>
+        <div class="card-head"><h2>Request <code id="detail-id"></code></h2><button type="button" id="detail-close">Close</button></div>
+        <div id="detail"></div>
+      </div>
+    </section>
+
+    <!-- Playground -->
+    <section id="panel-playground" role="tabpanel" aria-labelledby="tab-playground" hidden>
+      <div class="grid-2">
+        <div class="card">
+          <h2>Send a request through BridgeX</h2>
+          <label for="pg-scenario">Scenario</label>
+          <select id="pg-scenario"></select>
+          <p id="pg-description" class="muted"></p>
+          <p class="route"><span class="badge" id="pg-method">POST</span> <code id="pg-path"></code></p>
+          <div id="pg-idem-row" class="row" hidden>
+            <div class="grow">
+              <label for="pg-idem">Idempotency-Key</label>
+              <input id="pg-idem" spellcheck="false">
+            </div>
+            <button type="button" id="pg-idem-new">New key</button>
+          </div>
+          <label for="pg-body">Request body <span id="pg-format" class="badge"></span></label>
+          <textarea id="pg-body" rows="14" spellcheck="false"></textarea>
+          <div class="row">
+            <button type="button" id="pg-send" class="primary">Send</button>
+            <span id="pg-status" class="status" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Failure injection</h2>
+          <p class="muted">Break a simulated system on purpose to show retries, timeouts and monitoring.</p>
+          <label for="chaos-target">System</label>
+          <select id="chaos-target">
+            <option value="core-banking">Core Banking (SOAP, legacy)</option>
+            <option value="fintech">FinTech credit score (REST, modern)</option>
+          </select>
+          <div class="buttons">
+            <button type="button" data-chaos="error:2">Fail next 2 calls (recovers)</button>
+            <button type="button" data-chaos="error:5">Fail next 5 calls (outage)</button>
+            <button type="button" data-chaos="timeout:1">Slow next call (timeout)</button>
+            <button type="button" data-chaos="off:0">Clear</button>
+          </div>
+          <p id="chaos-state" class="status" role="status" aria-live="polite"></p>
+          <h2>Client response</h2>
+          <div id="pg-response-meta" class="chips"></div>
+          <pre id="pg-response" class="code" tabindex="0"></pre>
+        </div>
+      </div>
+      <div class="card">
+        <h2>What BridgeX did</h2>
+        <div id="pg-flow"><p class="muted">Send a request to see every stage of the transformation.</p></div>
+      </div>
+    </section>
+
+    <!-- Studio -->
+    <section id="panel-studio" role="tabpanel" aria-labelledby="tab-studio" hidden>
+      <div class="card">
+        <h2>Transformation Studio</h2>
+        <p class="muted">Paste a dummy XML or JSON payload and see what BridgeX turns it into. Nothing is sent to a downstream system.</p>
+        <div class="row">
+          <div><label for="st-integration">Integration</label><select id="st-integration"></select></div>
+          <div><label for="st-stage">Stage</label>
+            <select id="st-stage">
+              <option value="request">Request: client → downstream</option>
+              <option value="response">Response: downstream → client</option>
+            </select>
+          </div>
+          <button type="button" id="st-sample">Load sample</button>
+          <button type="button" id="st-run" class="primary">Transform</button>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label for="st-input">Input <span id="st-in-format" class="badge"></span></label>
+            <textarea id="st-input" rows="22" spellcheck="false"></textarea>
+          </div>
+          <div>
+            <p class="label">Output <span id="st-out-format" class="badge"></span></p>
+            <pre id="st-output" class="code tall" tabindex="0"></pre>
+            <ul id="st-errors" class="errors"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI mapping -->
+    <section id="panel-ai" role="tabpanel" aria-labelledby="tab-ai" hidden>
+      <div class="card">
+        <h2>AI-suggested field mapping</h2>
+        <p class="notice">Paste dummy data only. Both samples go to Amazon Bedrock (Claude Haiku 4.5). BridgeX checks every suggestion against the samples and never applies it: you review the draft and commit it as an integration document.</p>
+        <div class="grid-2">
+          <div>
+            <div class="row"><label for="ai-source-format">Source</label>
+              <select id="ai-source-format"><option value="xml">XML / SOAP</option><option value="json">JSON</option></select></div>
+            <textarea id="ai-source" rows="14" spellcheck="false" aria-label="Source sample"></textarea>
+          </div>
+          <div>
+            <div class="row"><label for="ai-target-format">Target</label>
+              <select id="ai-target-format"><option value="json">JSON</option><option value="xml">XML / SOAP</option></select></div>
+            <textarea id="ai-target" rows="14" spellcheck="false" aria-label="Target sample"></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <button type="button" id="ai-example">Load example</button>
+          <button type="button" id="ai-run" class="primary">Suggest mappings</button>
+          <span id="ai-status" class="status" role="status" aria-live="polite"></span>
+        </div>
+      </div>
+      <div class="card" id="ai-results" hidden>
+        <h2>Suggestions</h2>
+        <table id="ai-table">
+          <thead><tr><th scope="col">From</th><th scope="col">To</th><th scope="col">Conversion</th><th scope="col">Confidence</th><th scope="col">Reason</th><th scope="col">Check</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="ai-unmapped" class="muted"></p>
+        <div class="grid-2">
+          <div>
+            <h3>Draft mapping rules</h3>
+            <pre id="ai-draft" class="code" tabindex="0"></pre>
+          </div>
+          <div>
+            <h3>Draft applied to the source sample</h3>
+            <pre id="ai-preview" class="code" tabindex="0"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Integrations -->
+    <section id="panel-integrations" role="tabpanel" aria-labelledby="tab-integrations" hidden>
+      <div id="integrations"></div>
+    </section>
+  </main>
+
+  <footer>Built with the AWS AI-Driven Development Life Cycle and Kiro · <span id="env-label"></span></footer>
+</body>
+</html>
