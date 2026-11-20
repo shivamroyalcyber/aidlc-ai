@@ -1,37 +1,29 @@
+---
+inclusion: always
+---
 # Tech
 
 ## Stack
-- React 19 with function components and hooks
-- TypeScript 6 (strict-leaning, see below)
-- Vite 8 with `@vitejs/plugin-react`
-- ESLint 10 flat config (`typescript-eslint`, `react-hooks`, `react-refresh`)
-- npm (`package-lock.json`). ES modules (`"type": "module"`).
-- No test framework, router, state library, or CSS framework is installed. Don't add one without asking.
+- TypeScript (strict), Node.js 22 on AWS Lambda (arm64). ES modules (`"type": "module"`).
+- `fast-xml-parser` for XML and SOAP. No SOAP client library (ADR-003).
+- AWS SDK for JavaScript v3: DynamoDB (`lib-dynamodb`), Secrets Manager, Bedrock Runtime.
+- AWS CDK v2 in TypeScript for infrastructure. API Gateway HTTP API, Lambda, DynamoDB, Secrets Manager, S3 + CloudFront (OAC), CloudWatch.
+- Dashboard: plain HTML, CSS and ES-module JavaScript. No framework, no build step.
+- Tests: Vitest. Approved by the person on 2026-11-20 (delegated decision in the audit log).
 
-## Commands (run from `idea-board/`)
-- `npm run dev`: start the dev server on port 5173. It is long-running, so start it as a background process.
-- `npm run build`: `tsc -b && vite build`. This is the type check plus production build.
-- `npm run lint`: `eslint .`
-- `npm run preview`: serve the production build.
-
-## TypeScript rules (`tsconfig.app.json`)
-- `verbatimModuleSyntax`: use `import type { ... }` for type-only imports.
-- `erasableSyntaxOnly`: no `enum`, `namespace`, or constructor parameter properties. Use union types and plain objects.
-- `noUnusedLocals` and `noUnusedParameters` are on.
-- `allowImportingTsExtensions`: relative imports may include `.ts`/`.tsx`, as in `import App from './App.tsx'`.
-- Target ES2023. `types` is limited to `vite/client`.
-
-## Dev environment: IDE CloudFront proxy
-The dev server is opened through the IDE's CloudFront proxy, and `vite.config.ts` is set up for that:
-- `base: '/absproxy/5173/'`. The page URL is `https://<cloudfront-host>/absproxy/5173/`. `/proxy/5173/` does not work, because it strips the prefix and Vite then redirects in a loop.
-- `server.allowedHosts` lists the CloudFront host. Update it if the domain changes (see `VSCODE_PROXY_URI`).
-- `server.hmr` uses `clientPort: 443` and `protocol: 'wss'`.
-- Because of `base`, reference public assets in a way that respects it. Use `import.meta.env.BASE_URL` or import the asset from `src/`. Root-absolute paths such as `/icons.svg` in `App.tsx` ignore `base` in JSX attributes and will break.
-- If the app is deployed outside this proxy, revisit `base` and `hmr`.
+## Commands (run from `bridgex/`)
+- `npm test`: run Vitest once.
+- `npm run typecheck`: `tsc --noEmit`.
+- `npm run check`: typecheck and tests. Run before every commit.
+- `npm run local`: local server with simulators and dashboard on http://localhost:3000. Long-running; start it as a background process.
+- `npm run synth` / `npm run deploy`: CDK synth or deploy to `us-east-1`. Deploy needs AWS credentials in the environment.
+- `scripts/smoke.sh <gateway-url> <api-key>`: smoke-test a deployed stack.
 
 ## Conventions
-- Default-export the top-level component of a file. Keep one component per file once the app grows.
-- Satisfy the `react-refresh` rule: component files export only components.
-- Follow the `react-hooks` lint rules. Don't disable them to silence warnings.
-- Run `npm run lint` and `npm run build` after changes, and fix errors before finishing.
-- Don't commit secrets. Client-side env vars must use the `VITE_` prefix, and they are public.
+- Pure functions in `src/transform/`. No AWS SDK imports there.
+- Inject dependencies (HTTP client, stores, clock, secrets) into the pipeline so it runs in tests and locally without AWS.
+- Named exports only. No default exports.
+- Errors returned to clients use the error model in `contract-summary.md`. Never return stack traces.
+- Add a dependency only after recording the decision in the audit log.
+- Commit messages: `<type>(<unit>): <summary>`, for example `feat(transformation-engine): add SOAP fault parsing`.
+- Branch: `feat/bridgex-mvp` in the `/workshop` repository. Never push or merge; a person does that.

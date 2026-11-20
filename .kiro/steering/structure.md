@@ -1,30 +1,27 @@
+---
+inclusion: always
+---
 # Structure
-
-The workspace root is `/workshop`. The app lives in `idea-board/`. Run npm commands from that folder.
 
 ```
 /workshop
-├── .kiro/steering/          Steering docs (product, tech, structure)
-└── idea-board/
-    ├── index.html           Vite entry HTML; mounts #root, loads /src/main.tsx
-    ├── vite.config.ts       Vite config (react plugin, proxy base, allowedHosts, HMR)
-    ├── eslint.config.js     ESLint flat config
-    ├── tsconfig.json        References tsconfig.app.json and tsconfig.node.json
-    ├── tsconfig.app.json    Compiler options for src/
-    ├── tsconfig.node.json   Compiler options for config files such as vite.config.ts
-    ├── package.json
-    ├── public/              Static files served as-is (favicon.svg, icons.svg)
-    └── src/
-        ├── main.tsx         React root; renders <App /> in StrictMode
-        ├── App.tsx          Top-level component (currently starter demo)
-        ├── App.css          Styles for App
-        ├── index.css        Global styles
-        └── assets/          Images imported from code (hero.png, react.svg, vite.svg)
+├── .kiro/
+│   ├── steering/         # these rules
+│   ├── specs/<unit>/     # requirements.md, design.md, tasks.md per unit of work
+│   ├── agents/           # spec, build, reviewer, ops
+│   └── hooks/            # automation (audit reminders, checks, guards)
+├── aidlc/spaces/default/intents/261120-bridgex-mvp/   # AI-DLC record: state, audit, phase artifacts
+└── bridgex/
+    ├── src/
+    │   ├── transform/    # U1: xml.ts, soap.ts, mapping.ts, validate.ts, mask.ts, engine.ts
+    │   ├── config/       # U1: types.ts, registry.ts, integrations/*.json
+    │   ├── gateway/      # U3 + U6: app.ts, pipeline.ts, admin.ts, retry.ts, http-client.ts, stores, ai-mapping.ts, lambda.ts
+    │   ├── simulators/   # U2: core-banking.ts, fintech.ts, data.ts, lambda.ts
+    │   └── shared/       # http types, ids, small helpers
+    ├── test/             # Vitest tests, mirrors src/
+    ├── dashboard/        # U5: index.html, app.js, styles.css
+    ├── infra/            # U4: bin/app.ts, lib/bridgex-stack.ts
+    └── scripts/          # local-server.ts, smoke.sh, show-api-key.sh
 ```
 
-## Conventions
-- Application code goes under `idea-board/src/`. Config files stay at the `idea-board/` root.
-- Import images and other assets from `src/assets/` so Vite hashes and bundles them. Use `public/` only for files that need a fixed URL.
-- Keep global styles in `index.css` and component styles next to the component (`Component.css`).
-- When the app grows, group by feature (for example `src/components/`, `src/hooks/`, `src/types/`). Don't create these folders until there is code to put in them.
-- `node_modules/` and `dist/` are generated and ignored. Don't edit them.
+The old `idea-board/` folder is a separate, unrelated repository. Do not change it.
