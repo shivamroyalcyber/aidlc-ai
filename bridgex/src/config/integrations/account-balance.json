@@ -1,0 +1,46 @@
+{
+  "id": "account-balance",
+  "name": "Account balance inquiry",
+  "description": "Mobile banking app (REST/JSON) reads an account balance from the legacy Core Banking System (SOAP/XML).",
+  "direction": "rest-to-soap",
+  "route": { "method": "POST", "path": "/api/v1/accounts/balance" },
+  "target": {
+    "type": "soap",
+    "url": "${CORE_BANKING_URL}/CoreBankingService",
+    "operation": "GetAccountBalance",
+    "namespace": "http://legacybank.example.com/corebanking",
+    "soapAction": "http://legacybank.example.com/corebanking/GetAccountBalance",
+    "responseElement": "GetAccountBalanceResponse",
+    "auth": "ws-security"
+  },
+  "idempotent": true,
+  "timeoutMs": 2500,
+  "retry": { "maxAttempts": 3, "baseDelayMs": 200 },
+  "request": {
+    "schema": {
+      "accountId": { "type": "string", "required": true, "pattern": "^ACC[0-9]{3,12}$" }
+    },
+    "mappings": [
+      { "from": "accountId", "to": "AccountNumber", "sensitive": true }
+    ]
+  },
+  "response": {
+    "mappings": [
+      { "from": "AccountNumber", "to": "accountId", "sensitive": true },
+      { "from": "AccountName", "to": "accountName" },
+      { "from": "AvailableBalance", "to": "availableBalance", "type": "number" },
+      { "from": "LedgerBalance", "to": "ledgerBalance", "type": "number" },
+      { "from": "Currency", "to": "currency" },
+      { "from": "Status", "to": "status", "lookup": { "A": "active", "F": "frozen", "C": "closed" } },
+      { "from": "AsOfDate", "to": "asOf", "type": "date", "sourceFormat": "yyyyMMdd", "targetFormat": "iso" }
+    ]
+  },
+  "faults": {
+    "ACCOUNT_NOT_FOUND": { "status": 404 },
+    "AUTH_FAILED": { "status": 502, "code": "DOWNSTREAM_AUTH_FAILED" }
+  },
+  "samples": {
+    "request": "{\n  \"accountId\": \"ACC101\"\n}",
+    "response": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soapenv:Body>\n    <GetAccountBalanceResponse>\n      <AccountNumber>ACC101</AccountNumber>\n      <AvailableBalance>50000</AvailableBalance>\n      <Currency>INR</Currency>\n    </GetAccountBalanceResponse>\n  </soapenv:Body>\n</soapenv:Envelope>"
+  }
+}

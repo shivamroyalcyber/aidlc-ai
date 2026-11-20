@@ -1,0 +1,58 @@
+{
+  "id": "fund-transfer",
+  "name": "Fund transfer",
+  "description": "Mobile banking app moves money between accounts. Not idempotent downstream, so BridgeX requires an Idempotency-Key and never retries.",
+  "direction": "rest-to-soap",
+  "route": { "method": "POST", "path": "/api/v1/transfers" },
+  "target": {
+    "type": "soap",
+    "url": "${CORE_BANKING_URL}/CoreBankingService",
+    "operation": "TransferFunds",
+    "namespace": "http://legacybank.example.com/corebanking",
+    "soapAction": "http://legacybank.example.com/corebanking/TransferFunds",
+    "responseElement": "TransferFundsResponse",
+    "auth": "ws-security"
+  },
+  "idempotent": false,
+  "requireIdempotencyKey": true,
+  "timeoutMs": 4000,
+  "retry": { "maxAttempts": 1, "baseDelayMs": 0 },
+  "request": {
+    "schema": {
+      "fromAccountId": { "type": "string", "required": true, "pattern": "^ACC[0-9]{3,12}$" },
+      "toAccountId": { "type": "string", "required": true, "pattern": "^ACC[0-9]{3,12}$" },
+      "amount": { "type": "number", "required": true, "min": 0.01, "max": 1000000 },
+      "currency": { "type": "string", "enum": ["INR"] },
+      "reference": { "type": "string", "maxLength": 35 }
+    },
+    "mappings": [
+      { "from": "fromAccountId", "to": "FromAccount", "sensitive": true },
+      { "from": "toAccountId", "to": "ToAccount", "sensitive": true },
+      { "from": "amount", "to": "Amount", "type": "number" },
+      { "from": "currency", "to": "Currency", "default": "INR" },
+      { "from": "reference", "to": "Reference", "default": "BridgeX transfer" }
+    ]
+  },
+  "response": {
+    "mappings": [
+      { "from": "TransactionReference", "to": "transactionId" },
+      { "from": "Status", "to": "status", "lookup": { "S": "completed", "P": "pending" } },
+      { "from": "FromAccount", "to": "fromAccountId", "sensitive": true },
+      { "from": "ToAccount", "to": "toAccountId", "sensitive": true },
+      { "from": "DebitedAmount", "to": "amount", "type": "number" },
+      { "from": "Currency", "to": "currency" },
+      { "from": "ValueDate", "to": "valueDate", "type": "date", "sourceFormat": "yyyyMMdd", "targetFormat": "iso" }
+    ]
+  },
+  "faults": {
+    "ACCOUNT_NOT_FOUND": { "status": 404 },
+    "INSUFFICIENT_FUNDS": { "status": 422 },
+    "ACCOUNT_FROZEN": { "status": 422 },
+    "INVALID_AMOUNT": { "status": 422 },
+    "AUTH_FAILED": { "status": 502, "code": "DOWNSTREAM_AUTH_FAILED" }
+  },
+  "samples": {
+    "request": "{\n  \"fromAccountId\": \"ACC101\",\n  \"toAccountId\": \"ACC102\",\n  \"amount\": 2500,\n  \"currency\": \"INR\",\n  \"reference\": \"Rent November\"\n}",
+    "response": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:cb=\"http://legacybank.example.com/corebanking\">\n  <soapenv:Body>\n    <cb:TransferFundsResponse>\n      <cb:TransactionReference>TXN20261120000123</cb:TransactionReference>\n      <cb:Status>S</cb:Status>\n      <cb:FromAccount>ACC101</cb:FromAccount>\n      <cb:ToAccount>ACC102</cb:ToAccount>\n      <cb:DebitedAmount>2500.00</cb:DebitedAmount>\n      <cb:Currency>INR</cb:Currency>\n      <cb:ValueDate>20261120</cb:ValueDate>\n    </cb:TransferFundsResponse>\n  </soapenv:Body>\n</soapenv:Envelope>"
+  }
+}

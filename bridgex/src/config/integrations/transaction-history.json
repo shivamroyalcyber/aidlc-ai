@@ -1,0 +1,60 @@
+{
+  "id": "transaction-history",
+  "name": "Transaction history",
+  "description": "Mobile banking app lists recent transactions. Legacy dates (yyyyMMdd) become ISO dates and CR/DR codes become credit/debit.",
+  "direction": "rest-to-soap",
+  "route": { "method": "POST", "path": "/api/v1/accounts/transactions" },
+  "target": {
+    "type": "soap",
+    "url": "${CORE_BANKING_URL}/CoreBankingService",
+    "operation": "GetTransactionHistory",
+    "namespace": "http://legacybank.example.com/corebanking",
+    "soapAction": "http://legacybank.example.com/corebanking/GetTransactionHistory",
+    "responseElement": "GetTransactionHistoryResponse",
+    "auth": "ws-security"
+  },
+  "idempotent": true,
+  "timeoutMs": 2500,
+  "retry": { "maxAttempts": 3, "baseDelayMs": 200 },
+  "request": {
+    "schema": {
+      "accountId": { "type": "string", "required": true, "pattern": "^ACC[0-9]{3,12}$" },
+      "fromDate": { "type": "date", "required": true },
+      "toDate": { "type": "date", "required": true },
+      "limit": { "type": "integer", "min": 1, "max": 50 }
+    },
+    "mappings": [
+      { "from": "accountId", "to": "AccountNumber", "sensitive": true },
+      { "from": "fromDate", "to": "FromDate", "type": "date", "sourceFormat": "iso", "targetFormat": "yyyyMMdd" },
+      { "from": "toDate", "to": "ToDate", "type": "date", "sourceFormat": "iso", "targetFormat": "yyyyMMdd" },
+      { "from": "limit", "to": "MaxRecords", "type": "integer", "default": 10 }
+    ]
+  },
+  "response": {
+    "mappings": [
+      { "from": "AccountNumber", "to": "accountId", "sensitive": true },
+      { "from": "RecordCount", "to": "count", "type": "integer" },
+      {
+        "from": "Transactions.Transaction",
+        "to": "transactions",
+        "default": [],
+        "items": [
+          { "from": "TransactionId", "to": "id" },
+          { "from": "PostingDate", "to": "date", "type": "date", "sourceFormat": "yyyyMMdd", "targetFormat": "iso" },
+          { "from": "Amount", "to": "amount", "type": "number" },
+          { "from": "DrCrIndicator", "to": "type", "lookup": { "CR": "credit", "DR": "debit" } },
+          { "from": "Narration", "to": "description" },
+          { "from": "RunningBalance", "to": "balanceAfter", "type": "number" }
+        ]
+      }
+    ]
+  },
+  "faults": {
+    "ACCOUNT_NOT_FOUND": { "status": 404 },
+    "AUTH_FAILED": { "status": 502, "code": "DOWNSTREAM_AUTH_FAILED" }
+  },
+  "samples": {
+    "request": "{\n  \"accountId\": \"ACC101\",\n  \"fromDate\": \"2026-11-01\",\n  \"toDate\": \"2026-11-20\",\n  \"limit\": 5\n}",
+    "response": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:cb=\"http://legacybank.example.com/corebanking\">\n  <soapenv:Body>\n    <cb:GetTransactionHistoryResponse>\n      <cb:AccountNumber>ACC101</cb:AccountNumber>\n      <cb:RecordCount>2</cb:RecordCount>\n      <cb:Transactions>\n        <cb:Transaction>\n          <cb:TransactionId>TXN90001</cb:TransactionId>\n          <cb:PostingDate>20261118</cb:PostingDate>\n          <cb:Amount>2500.00</cb:Amount>\n          <cb:DrCrIndicator>DR</cb:DrCrIndicator>\n          <cb:Narration>UPI/Coffee Day</cb:Narration>\n          <cb:RunningBalance>50000.00</cb:RunningBalance>\n        </cb:Transaction>\n        <cb:Transaction>\n          <cb:TransactionId>TXN89977</cb:TransactionId>\n          <cb:PostingDate>20261115</cb:PostingDate>\n          <cb:Amount>45000.00</cb:Amount>\n          <cb:DrCrIndicator>CR</cb:DrCrIndicator>\n          <cb:Narration>Salary November</cb:Narration>\n          <cb:RunningBalance>52500.00</cb:RunningBalance>\n        </cb:Transaction>\n      </cb:Transactions>\n    </cb:GetTransactionHistoryResponse>\n  </soapenv:Body>\n</soapenv:Envelope>"
+  }
+}

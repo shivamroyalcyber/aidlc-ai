@@ -1,0 +1,49 @@
+{
+  "id": "credit-score",
+  "name": "Credit score for loan origination",
+  "description": "Legacy loan system (SOAP/XML) gets a credit score from a modern FinTech API (REST/JSON). The legacy-to-modern direction.",
+  "direction": "soap-to-rest",
+  "route": {
+    "method": "POST",
+    "path": "/soap/v1/LoanService",
+    "soapOperation": "GetCreditScore",
+    "soapNamespace": "http://legacybank.example.com/loans",
+    "responseElement": "GetCreditScoreResponse"
+  },
+  "target": {
+    "type": "rest",
+    "url": "${FINTECH_URL}/v1/credit-scores",
+    "method": "POST",
+    "auth": "bearer"
+  },
+  "idempotent": true,
+  "timeoutMs": 2500,
+  "retry": { "maxAttempts": 3, "baseDelayMs": 200 },
+  "request": {
+    "schema": {
+      "CustomerId": { "type": "string", "required": true, "pattern": "^CUST[0-9]{4,10}$" },
+      "LoanAmount": { "type": "number", "min": 1 }
+    },
+    "mappings": [
+      { "from": "CustomerId", "to": "customerId", "sensitive": true },
+      { "from": "LoanAmount", "to": "requestedAmount", "type": "number" }
+    ]
+  },
+  "response": {
+    "mappings": [
+      { "from": "customerId", "to": "CustomerId", "sensitive": true },
+      { "from": "score", "to": "CreditScore", "type": "integer" },
+      { "from": "band", "to": "RiskGrade", "lookup": { "EXCELLENT": "A", "GOOD": "B", "FAIR": "C", "POOR": "D" } },
+      { "from": "reportDate", "to": "ReportDate", "type": "date", "sourceFormat": "iso", "targetFormat": "yyyyMMdd" },
+      { "from": "factors", "to": "Factors.Factor", "array": true, "type": "string" }
+    ]
+  },
+  "faults": {
+    "CUSTOMER_NOT_FOUND": { "status": 404 },
+    "UNAUTHORIZED": { "status": 502, "code": "DOWNSTREAM_AUTH_FAILED" }
+  },
+  "samples": {
+    "request": "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ln=\"http://legacybank.example.com/loans\">\n  <soapenv:Header/>\n  <soapenv:Body>\n    <ln:GetCreditScore>\n      <ln:CustomerId>CUST1001</ln:CustomerId>\n      <ln:LoanAmount>500000</ln:LoanAmount>\n    </ln:GetCreditScore>\n  </soapenv:Body>\n</soapenv:Envelope>",
+    "response": "{\n  \"customerId\": \"CUST1001\",\n  \"score\": 742,\n  \"band\": \"GOOD\",\n  \"reportDate\": \"2026-11-20\",\n  \"factors\": [\"On-time repayments for 36 months\", \"Credit utilisation 28%\"]\n}"
+  }
+}
