@@ -51,6 +51,14 @@ describe('U6 Req 1 – AI mapping suggestions (FR-18)', () => {
       { from: 'Schedule.Inst', to: 'installments', items: [{ from: 'Amt', to: 'amount', type: 'number' }] },
     ]);
     expect(result.unmappedTargets).toEqual(['installments[].number']);
+    expect(result.preview).toEqual({
+      loanId: 'LN77',
+      outstanding: 125000,
+      nextDueDate: '2026-12-05',
+      status: 'active',
+      installments: [{ amount: 5000 }, { amount: 5000 }],
+    });
+    expect(result.previewErrors).toEqual([]);
   });
 
   it('1.5 rejects unparsable samples without calling the model', async () => {

@@ -77,15 +77,20 @@ createServer(async (req, res) => {
   };
 
   let response: HttpResponse;
-  const file = STATIC[url.pathname];
-  if (request.method === 'GET' && file) {
-    response = { status: 200, headers: { 'content-type': TYPES[extname(file)] ?? 'text/plain' }, body: await readFile(join(DASHBOARD_DIR, file), 'utf8') };
-  } else if (request.method === 'GET' && url.pathname === '/config.json') {
-    response = { status: 200, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ apiUrl: BASE, environment: 'local' }) };
-  } else if (url.pathname.startsWith('/sim/')) {
-    response = await simulators({ ...request, path: url.pathname.slice('/sim'.length) });
-  } else {
-    response = await gateway(request);
+  try {
+    const file = STATIC[url.pathname];
+    if (request.method === 'GET' && file) {
+      response = { status: 200, headers: { 'content-type': TYPES[extname(file)] ?? 'text/plain' }, body: await readFile(join(DASHBOARD_DIR, file), 'utf8') };
+    } else if (request.method === 'GET' && url.pathname === '/config.json') {
+      response = { status: 200, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ apiUrl: BASE, environment: 'local' }) };
+    } else if (url.pathname.startsWith('/sim/')) {
+      response = await simulators({ ...request, path: url.pathname.slice('/sim'.length) });
+    } else {
+      response = await gateway(request);
+    }
+  } catch (error) {
+    console.error(`local server error on ${request.method} ${request.path}: ${(error as Error).name}`);
+    response = { status: 500, headers: { 'content-type': 'application/json' }, body: '{"error":{"code":"LOCAL_SERVER_ERROR","message":"Local server error"}}' };
   }
   res.writeHead(response.status, response.headers).end(response.body);
 }).listen(PORT, () => {

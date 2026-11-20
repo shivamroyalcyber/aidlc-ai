@@ -34,6 +34,9 @@ export function createGatewayApp(deps: GatewayDeps): Handler {
     const startedAt = deps.now().getTime();
     const requestId = newRequestId(deps.now());
     try {
+      // API Gateway answers CORS preflight itself; this is a fallback if a preflight ever reaches the function.
+      if (request.method === 'OPTIONS') return { status: 204, headers: {}, body: '' };
+
       if (request.method === 'GET' && request.path === '/health') {
         return jsonResponse(200, { status: 'ok', integrations: deps.registry.list().length }, { 'x-bridgex-request-id': requestId });
       }

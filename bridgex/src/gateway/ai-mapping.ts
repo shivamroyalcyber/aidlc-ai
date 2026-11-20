@@ -2,6 +2,7 @@ import { ConverseCommand, type BedrockRuntimeClient } from '@aws-sdk/client-bedr
 import { DATE_FORMATS, VALUE_TYPES, type DateFormat, type MappingRule, type ValueType } from '../config/types';
 import { parseJsonBody } from '../transform/engine';
 import { BridgeError, isBridgeError } from '../transform/errors';
+import { applyMappings } from '../transform/mapping';
 import { leafPaths } from '../transform/paths';
 import { parseSoap } from '../transform/soap';
 import { isRecord, parseXml } from '../transform/xml';
@@ -35,6 +36,9 @@ export interface SuggestionResult {
   model: string;
   suggestions: Suggestion[];
   draft: MappingRule[];
+  /** The draft applied to the source sample, so a person can see what it would produce. */
+  preview: Record<string, unknown>;
+  previewErrors: string[];
   unmappedTargets: string[];
   sourcePaths: string[];
   targetPaths: string[];
@@ -217,10 +221,14 @@ export async function suggestMappings(input: SuggestionRequest, invoke: ModelInv
   const targetSet = new Set(targetPaths);
   const suggestions = raw.map((item) => checkSuggestion(item, sourceSet, targetSet)).filter((s): s is Suggestion => s !== undefined);
   const mappedTargets = new Set(suggestions.filter((s) => s.valid).map((s) => s.to));
+  const draft = buildDraft(suggestions);
+  const preview = applyMappings(sourceDoc, draft);
   return {
     model: modelId,
     suggestions,
-    draft: buildDraft(suggestions),
+    draft,
+    preview: preview.output,
+    previewErrors: preview.errors,
     unmappedTargets: targetPaths.filter((p) => !mappedTargets.has(p)),
     sourcePaths,
     targetPaths,
